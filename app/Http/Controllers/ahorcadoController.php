@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use http\Env\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
@@ -19,7 +20,7 @@ class ahorcadoController extends Controller
         $palabra = Session::get('palabra1');
 
         //SESION INTENTO
-        Session::put('intento', );
+        Session::put('intento');
         $intento = Session::get('intento',4);
 
         //SESION RESPUESTA
@@ -403,19 +404,88 @@ class ahorcadoController extends Controller
     }
 
 
-    public function juego(Request $request, $dificultad = 0, $palabra = ""){
+    public function juego(Request $request){
+
 
         $validator = Validator::make($request->all(), [
-            "nombre" => "required|string|max:30",
-            "palabra" => "required|string|max:60",
-            "apellido_materno" => "string|max:60",
+            "dificultad" => "int|min:0|max:5",
+            "respuesta" => "string|max:25|nullable",
+            "intento" => "int|min:0|max:7"
         ]);
+
+        $dificultad = request('dificultad');
+        $respuesta = request('respuesta');
+        $intento = request('intento');
 
         if ($validator->fails()) {
             dd($validator->errors());
         }
 
-        $palabras = ["rojo", "animal","pelicano", "eustaquio","esternocleidomastoideo"];
+        $palabras = ['vacio',"rojo", "animal","pelicano", "eustaquio","esternocleidomastoideo"];
+
+        if($dificultad === 0){
+            return response()->json([
+                "msg" => "Bienvenido a la api de ahorcado!!!!! Este juego cuenta con 5 dificultades: 1 - Facilote ,2 - Facil, 3 - Normal, 4 - Deficil, 5 - Extremo, Para jugar necesitaras objetos json. Estructura tu json de la siguiente forma para comenzar tu partida",
+                "estructura" =>"{'dificultad': int (numero de dificultad),'respuesta': string '(Respuesta)' <------- solamente poodras escribir una letra final a la vez. Unicamente aceptara la cadena final correcta!!!!, 'intento': int (numero de intento)}"
+
+            ]);
+        }
+
+        $desafio = $palabras[$dificultad];
+
+        return $this->proceso($desafio, $respuesta, $intento);
+
+    }
+
+    public function proceso($desafio,$respuesta,$intento)
+    {
+
+        if($intento > 6){
+            return response()->json([
+                "msg" => "Has perdido!!!! Superaste el nuemro limite de intentos Regresa a 127.0.0.1:8000/api/juego con tu json con datos vacios para volver a jugar"
+            ]);
+        }
+
+        if($desafio === $respuesta){
+            return response()->json([
+                "msg" => "Felicidades, has ganado el ahorcado!!!!!!!! Regresa a 127.0.0.1:8000/api/juego con tu json con datos vacios para volver a jugar"
+            ]);
+        }
+
+        $malo = strlen($respuesta);
+
+        if($malo>1){
+            return response()->json([
+               "msg"=> "unicamente puedes insertar caracter por caracter!!!!! la unica cadena completa valida es la correcta"
+            ]);
+        }
+
+        $coincidencias = 0;
+
+        $des = str_split($desafio);
+        $res =str_split($respuesta);
+
+        $muestra = [];
+
+        for ($i = 0; $i < count($des); $i++) {
+            $muestra[$i] = "*";
+            for($j = 0; $j < count($res); $j++){
+                if($des[$i] === $res[$j]){
+                    $coincidencias = $coincidencias + 1;
+                    $muestra[$i] = $des[$i];
+                    break;
+
+                }
+            }
+        }
+
+        return response()->json([
+            "tu respuesta: " => $respuesta,
+            "numero de coincidencias" => $coincidencias,
+            "intento numero: " => $intento,
+            "rastro: " => implode(",", $muestra),
+        ]);
+
 
     }
 }

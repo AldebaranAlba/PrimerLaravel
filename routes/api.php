@@ -47,7 +47,9 @@ route::post('game/{dificultad}/{palabra?}', [ahorcadoController::class, 'game'])
 ->where('palabra', '[a-z]');
 
 //Nuevo ahorcado
-route::post('juego/{dificultad}/{palabra?}', [ahorcadoController::class, 'game']);
+route::post('game/{dificultad}/{palabra?}', [ahorcadoController::class, 'game']);
+
+route::post('juego', [ahorcadoController::class, 'juego']);
 //    ->where('palabra', '[a-z]');
 
 
